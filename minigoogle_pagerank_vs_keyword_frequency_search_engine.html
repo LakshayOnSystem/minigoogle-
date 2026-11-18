@@ -1,0 +1,1366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MiniGoogle — Keyword Frequency vs. PageRank Search Comparison</title>
+  <!-- Load Tailwind CSS for responsive, modern styling -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Load Inter font for clean Google-inspired typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: #f8fafc;
+      color: #1e293b;
+    }
+
+    /* Classic Google-style search bar shadow */
+    .search-pill {
+      box-shadow: 0 2px 8px rgba(32, 33, 36, 0.08);
+      transition: box-shadow 0.2s ease, border-color 0.2s ease;
+    }
+    .search-pill:hover,
+    .search-pill:focus-within {
+      box-shadow: 0 4px 14px rgba(32, 33, 36, 0.14);
+      border-color: #cbd5e1;
+    }
+
+    /* Smooth card entrance and hover elevation */
+    .result-card {
+      transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+    }
+    .result-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px -4px rgba(15, 23, 42, 0.08);
+    }
+
+    /* Highlighted search term styling */
+    mark.search-highlight {
+      background-color: #fef08a;
+      color: #0f172a;
+      font-weight: 600;
+      padding: 0.05rem 0.25rem;
+      border-radius: 0.25rem;
+      box-decoration-break: clone;
+    }
+
+    /* SVG Graph interactive transitions */
+    .graph-node {
+      cursor: pointer;
+      transition: opacity 0.25s ease, transform 0.25s ease;
+    }
+    .graph-edge {
+      transition: stroke 0.25s ease, stroke-width 0.25s ease, opacity 0.25s ease;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased selection:bg-blue-100 selection:text-blue-900">
+
+  <!-- Top Header & Search Section -->
+  <header class="bg-white border-b border-slate-200/80 pt-7 pb-6 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-6xl mx-auto flex flex-col items-center text-center">
+      
+      <!-- Educational Pill Tag -->
+      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 border border-slate-200 text-xs font-medium text-slate-600 mb-3">
+        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+        Interactive Information Retrieval Simulator • 6-Page Mini-Web
+      </div>
+
+      <!-- Classic Multi-Colored MiniGoogle Logo -->
+      <h1 aria-label="MiniGoogle" class="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight select-none mb-2">
+        <span style="color: #4285F4;">M</span><span style="color: #EA4335;">i</span><span style="color: #FBBC05;">n</span><span style="color: #4285F4;">i</span><span style="color: #4285F4;">G</span><span style="color: #EA4335;">o</span><span style="color: #FBBC05;">o</span><span style="color: #4285F4;">g</span><span style="color: #34A853;">l</span><span style="color: #EA4335;">e</span>
+      </h1>
+
+      <!-- Subtitle -->
+      <p class="max-w-2xl text-sm sm:text-base text-slate-600 mb-6">
+        Compare how early 1990s <strong class="font-semibold text-slate-800">Keyword-Frequency</strong> search engines are fooled by keyword stuffing versus how Google’s <strong class="font-semibold text-slate-800">PageRank</strong> algorithm ranks pages by link authority.
+      </p>
+
+      <!-- Search Bar Form -->
+      <form id="search-form" class="w-full max-w-2xl flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+        <div class="search-pill flex-1 flex items-center bg-white border border-slate-300 rounded-full px-4 py-2.5">
+          <!-- Search Magnifying Glass SVG -->
+          <svg class="w-5 h-5 text-slate-400 shrink-0 mr-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35m1.85-5.15a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <input
+            id="search-input"
+            type="text"
+            value="pizza"
+            placeholder="Search the 6-page Pune food web (e.g., pizza, pune, biryani)..."
+            aria-label="Search query"
+            autocomplete="off"
+            class="w-full bg-transparent text-slate-900 placeholder-slate-400 text-base focus:outline-none"
+          />
+          <button
+            type="button"
+            id="clear-btn"
+            title="Clear search"
+            aria-label="Clear search"
+            class="text-slate-400 hover:text-slate-600 p-1 rounded-full transition-colors"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <button
+          type="submit"
+          class="bg-[#4285F4] hover:bg-[#3367D6] active:bg-[#2A56C6] text-white font-semibold text-sm sm:text-base px-6 py-3 rounded-full shadow-sm transition-colors cursor-pointer shrink-0"
+        >
+          MiniGoogle Search
+        </button>
+      </form>
+
+      <!-- Quick-Try Query Chips -->
+      <div class="mt-4 flex flex-wrap items-center justify-center gap-2" aria-label="Quick search queries">
+        <span class="text-xs font-medium text-slate-500 mr-1">Try queries:</span>
+        <button type="button" data-query="pizza" class="query-chip px-3 py-1.5 rounded-full text-xs font-medium border transition-all cursor-pointer">
+          pizza
+        </button>
+        <button type="button" data-query="pune" class="query-chip px-3 py-1.5 rounded-full text-xs font-medium border transition-all cursor-pointer">
+          pune
+        </button>
+        <button type="button" data-query="biryani" class="query-chip px-3 py-1.5 rounded-full text-xs font-medium border transition-all cursor-pointer">
+          biryani
+        </button>
+        <button type="button" data-query="chai" class="query-chip px-3 py-1.5 rounded-full text-xs font-medium border transition-all cursor-pointer">
+          chai
+        </button>
+        <button type="button" data-query="dosa" class="query-chip px-3 py-1.5 rounded-full text-xs font-medium border transition-all cursor-pointer">
+          dosa
+        </button>
+        <button type="button" data-query="cheese" class="query-chip px-3 py-1.5 rounded-full text-xs font-medium border transition-all cursor-pointer">
+          cheese
+        </button>
+        <button type="button" data-query="" class="query-chip px-3 py-1.5 rounded-full text-xs font-medium border transition-all cursor-pointer">
+          Show All Pages
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Container -->
+  <main class="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-8">
+
+    <!-- Status & Dynamic Insight Banner -->
+    <div id="status-banner" class="bg-white border border-slate-200 rounded-2xl p-4 sm:px-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+      <div class="flex items-start sm:items-center gap-3">
+        <div id="status-icon" class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 mt-0.5 sm:mt-0">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <div>
+          <p id="status-headline" class="text-sm font-semibold text-slate-900">
+            Showing results for "pizza" (6 matching pages)
+          </p>
+          <p id="status-subtext" class="text-xs sm:text-sm text-slate-600 mt-0.5">
+            Notice how keyword stuffing pushes <span class="font-medium text-rose-700">pizza-pizza-pizza.com</span> to #1 on the left, while PageRank promotes <span class="font-medium text-emerald-700">best-pizza-pune.com</span> on the right!
+          </p>
+        </div>
+      </div>
+      <div class="text-xs font-mono bg-slate-100 text-slate-700 px-3 py-1.5 rounded-lg border border-slate-200 self-start sm:self-center shrink-0">
+        d = 0.85 • 50 iterations
+      </div>
+    </div>
+
+    <!-- Side-by-Side Comparison Columns (2 Equal Columns on Desktop, Stacked on Mobile) -->
+    <section aria-label="Search Engine Ranking Comparison" class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+      
+      <!-- LEFT COLUMN: The Old Way (Keyword Frequency) -->
+      <div class="bg-white border border-slate-200 rounded-2xl shadow-xs overflow-hidden">
+        <div class="bg-amber-50/80 border-b border-amber-200/80 px-5 py-4">
+          <div class="flex items-center justify-between gap-2">
+            <div class="flex items-center gap-2.5">
+              <span class="w-8 h-8 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center font-bold text-sm border border-amber-200">
+                1995
+              </span>
+              <div>
+                <h2 class="text-base sm:text-lg font-bold text-slate-900">
+                  The Old Way (Keyword Frequency)
+                </h2>
+                <p class="text-xs text-slate-600">
+                  Ranks strictly by how many times the keyword appears in page text
+                </p>
+              </div>
+            </div>
+            <span id="old-count-badge" class="text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 border border-amber-200 shrink-0">
+              6 results
+            </span>
+          </div>
+        </div>
+
+        <!-- Old Way Results Container -->
+        <div id="old-way-results" class="p-4 sm:p-5 space-y-3.5">
+          <!-- Populated dynamically via JS -->
+        </div>
+      </div>
+
+      <!-- RIGHT COLUMN: The PageRank Way (Link Authority + Relevance) -->
+      <div class="bg-white border border-slate-200 rounded-2xl shadow-xs overflow-hidden">
+        <div class="bg-blue-50/80 border-b border-blue-200/80 px-5 py-4">
+          <div class="flex items-center justify-between gap-2">
+            <div class="flex items-center gap-2.5">
+              <span class="w-8 h-8 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm border border-blue-200">
+                PR
+              </span>
+              <div>
+                <h2 class="text-base sm:text-lg font-bold text-slate-900">
+                  The PageRank Way (Link Authority + Relevance)
+                </h2>
+                <p class="text-xs text-slate-600">
+                  Filters matching pages, then ranks by incoming link authority
+                </p>
+              </div>
+            </div>
+            <span id="pr-count-badge" class="text-xs font-semibold px-2.5 py-1 rounded-full bg-blue-100 text-blue-800 border border-blue-200 shrink-0">
+              6 results
+            </span>
+          </div>
+        </div>
+
+        <!-- PageRank Way Results Container -->
+        <div id="pagerank-way-results" class="p-4 sm:p-5 space-y-3.5">
+          <!-- Populated dynamically via JS -->
+        </div>
+      </div>
+
+    </section>
+
+    <!-- Interactive Visual Web Link Graph Section -->
+    <section aria-label="Interactive Web Link Graph" class="bg-white border border-slate-200 rounded-2xl shadow-xs overflow-hidden">
+      <div class="px-5 py-4 border-b border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div>
+          <h2 class="text-base sm:text-lg font-bold text-slate-900">
+            Visual Web Link Graph (Why Page 2 Wins &amp; Page 6 Sinks)
+          </h2>
+          <p class="text-xs sm:text-sm text-slate-600 mt-0.5">
+            Node size is proportional to PageRank score. Click or hover any page node to trace incoming endorsements and outgoing links.
+          </p>
+        </div>
+        <div class="flex flex-wrap items-center gap-3 text-xs text-slate-600">
+          <span class="inline-flex items-center gap-1.5">
+            <span class="w-3 h-3 rounded-full bg-[#4285F4] inline-block"></span> Matches Query
+          </span>
+          <span class="inline-flex items-center gap-1.5">
+            <span class="w-3 h-3 rounded-full bg-rose-500 inline-block"></span> Spam / 0 In-Links
+          </span>
+          <span class="inline-flex items-center gap-1.5">
+            <span class="w-3 h-3 rounded-full bg-slate-300 inline-block"></span> Filtered Out
+          </span>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3">
+        <!-- SVG Canvas Wrapper -->
+        <div class="lg:col-span-2 p-4 sm:p-6 bg-slate-50/60 flex items-center justify-center border-b lg:border-b-0 lg:border-r border-slate-200">
+          <svg
+            id="link-graph-svg"
+            viewBox="0 0 720 420"
+            class="w-full h-auto max-h-[420px] select-none"
+            role="img"
+            aria-label="Directed link graph of the 6 pages in MiniGoogle"
+          >
+            <defs>
+              <!-- Standard Arrowhead -->
+              <marker id="arrow-default" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+                <path d="M 0 1.5 L 10 5 L 0 8.5 z" fill="#94a3b8" />
+              </marker>
+              <!-- Incoming Endorsement Arrowhead (Green) -->
+              <marker id="arrow-in" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M 0 1.5 L 10 5 L 0 8.5 z" fill="#10b981" />
+              </marker>
+              <!-- Outgoing Link Arrowhead (Blue) -->
+              <marker id="arrow-out" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M 0 1.5 L 10 5 L 0 8.5 z" fill="#2563eb" />
+              </marker>
+            </defs>
+            <g id="graph-edges"></g>
+            <g id="graph-nodes"></g>
+          </svg>
+        </div>
+
+        <!-- Live Node & Formula Inspector Panel -->
+        <div class="p-5 flex flex-col justify-between bg-white space-y-5">
+          <div id="node-inspector">
+            <!-- Populated dynamically with selected/hovered node details -->
+          </div>
+
+          <!-- Mathematical Formula Box -->
+          <div class="bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-xs text-slate-600 space-y-1.5">
+            <div class="font-semibold text-slate-800 flex items-center justify-between">
+              <span>PageRank Formula (Brin &amp; Page, 1998)</span>
+              <span class="text-[11px] font-mono text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">d = 0.85</span>
+            </div>
+            <p class="font-mono text-[11px] sm:text-xs bg-white border border-slate-200 rounded-lg px-2.5 py-2 text-slate-800 overflow-x-auto">
+              PR(u) = (1 - d)/N + d · Σ [ PR(v) / outDegree(v) ]
+            </p>
+            <p class="text-[11px] leading-relaxed text-slate-500">
+              Each outgoing link from page <strong>v</strong> passes an equal share of <strong>v</strong>’s authority to target page <strong>u</strong>. Pages with zero incoming links receive only the base teleportation score: <span class="font-mono text-slate-700">(1 - 0.85) / 6 = 0.025 (2.5%)</span>.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Reference Table of All 6 Indexed Pages -->
+    <section aria-label="Indexed Pages Reference Table" class="bg-white border border-slate-200 rounded-2xl shadow-xs overflow-hidden">
+      <div class="px-5 py-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div>
+          <h2 class="text-base sm:text-lg font-bold text-slate-900">
+            Indexed Web Corpus &amp; Computed PageRank Scores
+          </h2>
+          <p class="text-xs sm:text-sm text-slate-600 mt-0.5">
+            Complete dataset of all 6 crawled pages, link structure, and converged PageRank authority scores.
+          </p>
+        </div>
+        <span class="text-xs font-medium text-slate-500">
+          Click any row to highlight in graph
+        </span>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="bg-slate-50 border-b border-slate-200 text-xs font-semibold uppercase tracking-wider text-slate-500">
+              <th class="py-3 px-4">Page #</th>
+              <th class="py-3 px-4">URL</th>
+              <th class="py-3 px-4 min-w-[240px]">Indexed Page Text</th>
+              <th class="py-3 px-4">Outgoing Links</th>
+              <th class="py-3 px-4">Incoming Links</th>
+              <th class="py-3 px-4 text-right">PageRank Score</th>
+            </tr>
+          </thead>
+          <tbody id="reference-table-body" class="divide-y divide-slate-200 text-sm">
+            <!-- Populated dynamically via JS -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Non-Intrusive Simulated Browser Preview Modal (replaces external navigation / alert) -->
+  <div
+    id="preview-modal"
+    class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="modal-title"
+  >
+    <div class="bg-white border border-slate-200 rounded-2xl max-w-lg w-full shadow-xl overflow-hidden animate-fade-in">
+      <!-- Fake Browser Chrome -->
+      <div class="bg-slate-100 border-b border-slate-200 px-4 py-2.5 flex items-center justify-between gap-3">
+        <div class="flex items-center gap-1.5">
+          <span class="w-3 h-3 rounded-full bg-rose-400"></span>
+          <span class="w-3 h-3 rounded-full bg-amber-400"></span>
+          <span class="w-3 h-3 rounded-full bg-emerald-400"></span>
+        </div>
+        <div id="modal-url-bar" class="flex-1 bg-white border border-slate-200 rounded-full px-3 py-1 text-xs font-mono text-slate-600 truncate text-center">
+          http://best-pizza-pune.com
+        </div>
+        <button
+          id="close-modal-btn"
+          type="button"
+          aria-label="Close page preview"
+          class="text-slate-500 hover:text-slate-800 p-1 rounded-lg hover:bg-slate-200/70 transition-colors cursor-pointer"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <!-- Simulated Page Body -->
+      <div id="modal-body" class="p-6 space-y-4">
+        <!-- Populated dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="bg-white border-t border-slate-200 py-5 px-4 text-center text-xs text-slate-500">
+    <p>
+      <strong>MiniGoogle</strong> • Interactive Educational Demonstration of Keyword Frequency vs. PageRank Link Analysis
+    </p>
+  </footer>
+
+  <script>
+    /**
+     * ============================================================================
+     * 1. EXACT 6-PAGE DATASET
+     * ============================================================================
+     */
+    const PAGES_DATA = [
+      {
+        id: 1,
+        url: "pune-food-guide.com",
+        text: "Where to eat in Pune - vada pav and biryani and pizza",
+        links_to: [2]
+      },
+      {
+        id: 2,
+        url: "best-pizza-pune.com",
+        text: "Fresh wood-fired pizza made daily - try our cheese pizza",
+        links_to: [1, 3]
+      },
+      {
+        id: 3,
+        url: "college-canteen-blog.com",
+        text: "Student reviews of canteen food and chai and Friday pizza",
+        links_to: [2, 4]
+      },
+      {
+        id: 4,
+        url: "pizza-recipes-home.com",
+        text: "Make pizza at home - pizza dough and pizza sauce",
+        links_to: [2, 5]
+      },
+      {
+        id: 5,
+        url: "cheap-eats-pune.com",
+        text: "Good food under 100 rupees - misal and dosa and pizza slices",
+        links_to: [2]
+      },
+      {
+        id: 6,
+        url: "pizza-pizza-pizza.com",
+        text: "pizza pizza pizza pizza pizza pizza pizza pizza pizza pizza",
+        links_to: [1]
+      }
+    ];
+
+    /**
+     * ============================================================================
+     * 2. ITERATIVE PAGERANK ALGORITHM (d = 0.85, 50 iterations)
+     *    Formula: PR(u) = (1 - d)/N + d * sum(PR(v) / outDegree(v))
+     * ============================================================================
+     */
+    function computePageRank(pages, dampingFactor = 0.85, iterations = 50) {
+      const N = pages.length;
+      const pageMap = new Map();
+
+      // Initialize page records with incoming link lists and uniform starting PR = 1/N
+      pages.forEach((page) => {
+        pageMap.set(page.id, {
+          ...page,
+          incoming_from: [],
+          pageRank: 1 / N
+        });
+      });
+
+      // Build reverse adjacency list (incoming links)
+      pages.forEach((sourcePage) => {
+        sourcePage.links_to.forEach((targetId) => {
+          if (pageMap.has(targetId)) {
+            pageMap.get(targetId).incoming_from.push(sourcePage.id);
+          }
+        });
+      });
+
+      // Run power iteration for 50 steps
+      for (let iter = 0; iter < iterations; iter++) {
+        const nextScores = new Map();
+
+        // Handle any dangling nodes (pages with 0 outgoing links) gracefully
+        let danglingSum = 0;
+        pageMap.forEach((p) => {
+          if (p.links_to.length === 0) {
+            danglingSum += p.pageRank;
+          }
+        });
+
+        pageMap.forEach((targetPage, targetId) => {
+          let incomingAuthoritySum = 0;
+
+          targetPage.incoming_from.forEach((sourceId) => {
+            const sourcePage = pageMap.get(sourceId);
+            const outDegree = sourcePage.links_to.length;
+            if (outDegree > 0) {
+              incomingAuthoritySum += sourcePage.pageRank / outDegree;
+            }
+          });
+
+          const baseTeleport = (1 - dampingFactor) / N;
+          const distributedDangling = dampingFactor * (danglingSum / N);
+          const newRank = baseTeleport + distributedDangling + dampingFactor * incomingAuthoritySum;
+          nextScores.set(targetId, newRank);
+        });
+
+        // Commit updated scores for this iteration
+        nextScores.forEach((score, id) => {
+          pageMap.get(id).pageRank = score;
+        });
+      }
+
+      return Array.from(pageMap.values());
+    }
+
+    // Compute enriched dataset once on startup
+    const INDEXED_PAGES = computePageRank(PAGES_DATA, 0.85, 50);
+
+    // Application UI State
+    let currentQuery = "pizza";
+    let selectedNodeId = 2; // Default highlight on Page 2 (the PageRank winner)
+
+    /**
+     * ============================================================================
+     * 3. TEXT MATCHING & SNIPPET HIGHLIGHTING UTILITIES
+     * ============================================================================
+     */
+    function escapeHtml(str) {
+      return str
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function escapeRegExp(str) {
+      return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    }
+
+    /**
+     * Parses query into unique non-empty lowercase search terms.
+     */
+    function parseQueryTerms(rawQuery) {
+      const cleaned = rawQuery.trim().toLowerCase();
+      if (!cleaned) return [];
+      const tokens = cleaned.split(/\s+/).filter(Boolean);
+      return Array.from(new Set(tokens));
+    }
+
+    /**
+     * Counts total case-insensitive occurrences of query keyword(s) in page text.
+     */
+    function countKeywordOccurrences(text, terms) {
+      if (terms.length === 0) return 0;
+      const lowerText = text.toLowerCase();
+      let totalMatches = 0;
+
+      terms.forEach((term) => {
+        const regex = new RegExp(escapeRegExp(term), "gi");
+        const matches = lowerText.match(regex);
+        if (matches) {
+          totalMatches += matches.length;
+        }
+      });
+
+      return totalMatches;
+    }
+
+    /**
+     * Wraps matching query keywords inside `<mark class="search-highlight">...</mark>`.
+     */
+    function highlightSnippet(text, terms) {
+      if (!terms || terms.length === 0) {
+        return escapeHtml(text);
+      }
+
+      // Sort terms longest-first to avoid partial overlapping replacements
+      const sortedTerms = [...terms].sort((a, b) => b.length - a.length);
+      const pattern = new RegExp(`(${sortedTerms.map(escapeRegExp).join("|")})`, "gi");
+
+      // Split and escape non-matching parts safely
+      const parts = text.split(pattern);
+      return parts
+        .map((part) => {
+          const isMatch = sortedTerms.some((t) => part.toLowerCase() === t.toLowerCase());
+          return isMatch
+            ? `<mark class="search-highlight">${escapeHtml(part)}</mark>`
+            : escapeHtml(part);
+        })
+        .join("");
+    }
+
+    /**
+     * ============================================================================
+     * 4. RENDER LEFT & RIGHT SEARCH RESULTS
+     * ============================================================================
+     */
+    function renderSearchResults(rawQuery) {
+      currentQuery = rawQuery;
+      const terms = parseQueryTerms(rawQuery);
+      const isShowAll = terms.length === 0;
+
+      // Enrich each page with its keyword match count for the active query
+      const evaluatedPages = INDEXED_PAGES.map((page) => ({
+        ...page,
+        keywordCount: countKeywordOccurrences(page.text, terms)
+      }));
+
+      // Filter matching pages (or include all 6 if "Show All Pages" / empty query)
+      const matchingPages = isShowAll
+        ? [...evaluatedPages]
+        : evaluatedPages.filter((p) => p.keywordCount > 0);
+
+      // Left Column Sorting: Strictly by keyword frequency descending (tie-break by Page ID)
+      const oldWaySorted = [...matchingPages].sort((a, b) => {
+        if (b.keywordCount !== a.keywordCount) {
+          return b.keywordCount - a.keywordCount;
+        }
+        return a.id - b.id;
+      });
+
+      // Right Column Sorting: Strictly by computed PageRank descending
+      const pageRankSorted = [...matchingPages].sort((a, b) => b.pageRank - a.pageRank);
+
+      // Update counts & status banner
+      document.getElementById("old-count-badge").textContent = `${oldWaySorted.length} ${oldWaySorted.length === 1 ? "result" : "results"}`;
+      document.getElementById("pr-count-badge").textContent = `${pageRankSorted.length} ${pageRankSorted.length === 1 ? "result" : "results"}`;
+
+      updateStatusBanner(rawQuery, terms, isShowAll, oldWaySorted, pageRankSorted);
+      updateActiveChips(rawQuery);
+
+      const oldContainer = document.getElementById("old-way-results");
+      const prContainer = document.getElementById("pagerank-way-results");
+
+      // Empty state if query matches 0 pages
+      if (matchingPages.length === 0) {
+        const emptyHtml = `
+          <div class="text-center py-10 px-4 border border-dashed border-slate-200 rounded-xl bg-slate-50/70">
+            <p class="text-sm font-semibold text-slate-800">No pages matched "${escapeHtml(rawQuery)}"</p>
+            <p class="text-xs text-slate-500 mt-1">
+              Try searching for <button type="button" onclick="triggerQuickSearch('pizza')" class="text-blue-600 underline font-medium cursor-pointer">pizza</button>,
+              <button type="button" onclick="triggerQuickSearch('pune')" class="text-blue-600 underline font-medium cursor-pointer">pune</button>,
+              <button type="button" onclick="triggerQuickSearch('biryani')" class="text-blue-600 underline font-medium cursor-pointer">biryani</button>, or
+              <button type="button" onclick="triggerQuickSearch('')" class="text-blue-600 underline font-medium cursor-pointer">Show All Pages</button>.
+            </p>
+          </div>
+        `;
+        oldContainer.innerHTML = emptyHtml;
+        prContainer.innerHTML = emptyHtml;
+        renderLinkGraph(matchingPages.map((p) => p.id));
+        renderReferenceTable(matchingPages.map((p) => p.id));
+        return;
+      }
+
+      // Render Left Column: The Old Way (Keyword Frequency)
+      oldContainer.innerHTML = oldWaySorted
+        .map((page, index) => {
+          const rank = index + 1;
+          const isKeywordStuffed = page.id === 6 && !isShowAll && page.keywordCount >= 5;
+          const rankBadgeClass =
+            rank === 1
+              ? "bg-amber-500 text-white"
+              : "bg-slate-100 text-slate-700 border border-slate-200";
+
+          return `
+            <article
+              onclick="selectNode(${page.id})"
+              class="result-card cursor-pointer rounded-xl border ${
+                isKeywordStuffed ? "border-rose-300 bg-rose-50/30" : "border-slate-200 bg-white"
+              } p-4"
+            >
+              <div class="flex flex-wrap items-center justify-between gap-2 mb-1.5">
+                <div class="flex items-center gap-2">
+                  <span class="inline-flex items-center justify-center px-2 py-0.5 rounded-md text-xs font-bold ${rankBadgeClass}">
+                    #${rank}
+                  </span>
+                  <span class="text-xs font-semibold text-slate-500">Page ${page.id}</span>
+                  <a
+                    href="http://${page.url}"
+                    onclick="event.preventDefault(); event.stopPropagation(); openPagePreview(${page.id});"
+                    class="text-sm font-semibold text-[#1a0dab] hover:underline break-all"
+                  >
+                    http://${page.url}
+                  </a>
+                </div>
+
+                <!-- Keyword Match Count Badge -->
+                <span class="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-0.5 rounded-full ${
+                  isShowAll
+                    ? "bg-slate-100 text-slate-600 border border-slate-200"
+                    : isKeywordStuffed
+                    ? "bg-rose-100 text-rose-800 border border-rose-200"
+                    : "bg-amber-100 text-amber-900 border border-amber-200"
+                }">
+                  ${
+                    isShowAll
+                      ? "All Pages Mode"
+                      : `${page.keywordCount} keyword ${page.keywordCount === 1 ? "match" : "matches"}`
+                  }
+                </span>
+              </div>
+
+              <!-- Highlighted Page Text -->
+              <p class="text-sm text-slate-700 leading-relaxed">
+                ${highlightSnippet(page.text, terms)}
+              </p>
+
+              <!-- Callout Banner for Keyword Stuffing Spam on Page 6 -->
+              ${
+                isKeywordStuffed
+                  ? `
+                <div class="mt-3 flex items-start gap-2 rounded-lg bg-rose-100/80 border border-rose-200 px-3 py-2 text-xs text-rose-900">
+                  <svg class="w-4 h-4 text-rose-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                  </svg>
+                  <div>
+                    <strong class="font-bold">Keyword Stuffing Trap!</strong> This spam page repeats “pizza” 10 times with zero useful content, tricking old keyword-counting engines into ranking it <strong>#1</strong>.
+                  </div>
+                </div>
+              `
+                  : ""
+              }
+            </article>
+          `;
+        })
+        .join("");
+
+      // Render Right Column: The PageRank Way (Link Authority + Relevance)
+      prContainer.innerHTML = pageRankSorted
+        .map((page, index) => {
+          const rank = index + 1;
+          const prDecimal = page.pageRank.toFixed(3);
+          const prPercent = (page.pageRank * 100).toFixed(1) + "%";
+          const inLinksFormatted =
+            page.incoming_from.length > 0
+              ? page.incoming_from.map((id) => `#${id}`).join(", ")
+              : "None (0)";
+          const outLinksFormatted =
+            page.links_to.length > 0
+              ? page.links_to.map((id) => `#${id}`).join(", ")
+              : "None (0)";
+
+          const isTopAuthority = rank === 1 && !isShowAll && page.id === 2;
+          const isSpamDemoted = page.id === 6;
+
+          const rankBadgeClass =
+            rank === 1
+              ? "bg-emerald-600 text-white"
+              : isSpamDemoted
+              ? "bg-rose-100 text-rose-800 border border-rose-200"
+              : "bg-blue-50 text-blue-800 border border-blue-200";
+
+          return `
+            <article
+              onclick="selectNode(${page.id})"
+              class="result-card cursor-pointer rounded-xl border ${
+                isTopAuthority
+                  ? "border-emerald-300 bg-emerald-50/25"
+                  : isSpamDemoted
+                  ? "border-slate-200 bg-slate-50/60"
+                  : "border-slate-200 bg-white"
+              } p-4"
+            >
+              <div class="flex flex-wrap items-center justify-between gap-2 mb-1.5">
+                <div class="flex items-center gap-2">
+                  <span class="inline-flex items-center justify-center px-2 py-0.5 rounded-md text-xs font-bold ${rankBadgeClass}">
+                    #${rank}
+                  </span>
+                  <span class="text-xs font-semibold text-slate-500">Page ${page.id}</span>
+                  <a
+                    href="http://${page.url}"
+                    onclick="event.preventDefault(); event.stopPropagation(); openPagePreview(${page.id});"
+                    class="text-sm font-semibold text-[#1a0dab] hover:underline break-all"
+                  >
+                    http://${page.url}
+                  </a>
+                </div>
+
+                <!-- Computed PageRank Score Badge -->
+                <span class="inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-800 border border-blue-200 font-mono">
+                  PR: ${prDecimal} (${prPercent})
+                </span>
+              </div>
+
+              <!-- Highlighted Page Text -->
+              <p class="text-sm text-slate-700 leading-relaxed mb-2.5">
+                ${highlightSnippet(page.text, terms)}
+              </p>
+
+              <!-- Incoming & Outgoing Link Metadata Pills -->
+              <div class="flex flex-wrap items-center gap-2 text-xs">
+                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md font-medium ${
+                  page.incoming_from.length > 0
+                    ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
+                    : "bg-rose-50 text-rose-700 border border-rose-200"
+                }">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+                  </svg>
+                  In-links from: <strong>${inLinksFormatted}</strong>
+                </span>
+
+                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md font-medium bg-slate-100 text-slate-700 border border-slate-200">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                  </svg>
+                  Links to: <strong>${outLinksFormatted}</strong>
+                </span>
+              </div>
+
+              ${
+                isTopAuthority
+                  ? `
+                <div class="mt-3 flex items-start gap-2 rounded-lg bg-emerald-100/70 border border-emerald-200 px-3 py-2 text-xs text-emerald-900">
+                  <svg class="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <div>
+                    <strong class="font-bold">Trusted Hub Wins!</strong> Recommended by 4 other food pages (#1, #3, #4, #5), giving it the highest PageRank (<strong>0.388</strong>).
+                  </div>
+                </div>
+              `
+                  : ""
+              }
+
+              ${
+                isSpamDemoted && !isShowAll
+                  ? `
+                <div class="mt-2.5 text-[11px] text-slate-500">
+                  Demoted to <strong>#${rank}</strong>: Despite repeating “pizza” 10 times, zero sites link to it (PR = 0.025).
+                </div>
+              `
+                  : ""
+              }
+            </article>
+          `;
+        })
+        .join("");
+
+      const matchingIds = matchingPages.map((p) => p.id);
+      renderLinkGraph(matchingIds);
+      renderReferenceTable(matchingIds);
+    }
+
+    /**
+     * Updates the top educational insight banner based on the active query.
+     */
+    function updateStatusBanner(rawQuery, terms, isShowAll, oldSorted, prSorted) {
+      const headline = document.getElementById("status-headline");
+      const subtext = document.getElementById("status-subtext");
+
+      if (isShowAll) {
+        headline.textContent = "Showing all 6 indexed pages in the MiniGoogle web corpus";
+        subtext.innerHTML =
+          'Without a search filter, all 6 pages are displayed. Notice how <strong>best-pizza-pune.com</strong> holds <strong>38.8%</strong> of the entire web’s PageRank authority.';
+        return;
+      }
+
+      if (oldSorted.length === 0) {
+        headline.textContent = `0 pages matched "${rawQuery.trim()}"`;
+        subtext.textContent =
+          "Neither ranking algorithm returns results when zero indexed pages contain the query keyword.";
+        return;
+      }
+
+      headline.textContent = `Comparing ${oldSorted.length} matching ${
+        oldSorted.length === 1 ? "page" : "pages"
+      } for "${rawQuery.trim()}"`;
+
+      if (oldSorted[0].id !== prSorted[0].id) {
+        subtext.innerHTML = `Ranking disagreement! <strong>The Old Way</strong> picks <span class="font-semibold text-rose-700">${oldSorted[0].url}</span> (#1 by raw word count), whereas <strong>PageRank</strong> trusts <span class="font-semibold text-emerald-700">${prSorted[0].url}</span> (#1 by incoming links).`;
+      } else {
+        subtext.innerHTML = `Both algorithms rank <span class="font-semibold text-blue-700">${prSorted[0].url}</span> #1 for "${escapeHtml(
+          rawQuery.trim()
+        )}", though PageRank still orders the remaining pages by link authority.`;
+      }
+    }
+
+    /**
+     * Highlights the active quick-try query chip.
+     */
+    function updateActiveChips(rawQuery) {
+      const normalized = rawQuery.trim().toLowerCase();
+      document.querySelectorAll(".query-chip").forEach((chip) => {
+        const chipQuery = (chip.getAttribute("data-query") || "").toLowerCase();
+        if (chipQuery === normalized) {
+          chip.className =
+            "query-chip px-3 py-1.5 rounded-full text-xs font-semibold border border-blue-600 bg-blue-600 text-white shadow-xs transition-all cursor-pointer";
+        } else {
+          chip.className =
+            "query-chip px-3 py-1.5 rounded-full text-xs font-medium border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 transition-all cursor-pointer";
+        }
+      });
+    }
+
+    /**
+     * ============================================================================
+     * 5. INTERACTIVE SVG NETWORK GRAPH
+     * ============================================================================
+     */
+    // Carefully balanced coordinates inside the 720x420 viewBox
+    const NODE_COORDINATES = {
+      2: { x: 320, y: 210 }, // Central authoritative hub
+      1: { x: 145, y: 120 }, // Top-left guide (also receives from Page 6)
+      3: { x: 495, y: 105 }, // Top-right college blog
+      4: { x: 525, y: 305 }, // Bottom-right home recipes
+      5: { x: 245, y: 345 }, // Bottom-center cheap eats
+      6: { x: 65, y: 285 }   // Isolated spam node on far left
+    };
+
+    function renderLinkGraph(matchingIds) {
+      const edgesGroup = document.getElementById("graph-edges");
+      const nodesGroup = document.getElementById("graph-nodes");
+      const matchingSet = new Set(matchingIds);
+
+      // Compute visual radii scaled by PageRank score
+      const radii = {};
+      INDEXED_PAGES.forEach((p) => {
+        radii[p.id] = Math.round(22 + p.pageRank * 66);
+      });
+
+      // Build directed edges (curved if bidirectional between two nodes)
+      let edgesSvg = "";
+      INDEXED_PAGES.forEach((source) => {
+        source.links_to.forEach((targetId) => {
+          const target = INDEXED_PAGES.find((p) => p.id === targetId);
+          if (!target) return;
+
+          const p1 = NODE_COORDINATES[source.id];
+          const p2 = NODE_COORDINATES[target.id];
+          const r1 = radii[source.id];
+          const r2 = radii[target.id];
+
+          const isBidirectional = target.links_to.includes(source.id);
+          const isIncomingToSelected = target.id === selectedNodeId;
+          const isOutgoingFromSelected = source.id === selectedNodeId;
+
+          let strokeColor = "#cbd5e1";
+          let strokeWidth = 2;
+          let markerId = "url(#arrow-default)";
+          let opacity = 0.85;
+
+          if (isIncomingToSelected) {
+            strokeColor = "#10b981"; // Emerald green for incoming vote
+            strokeWidth = 3;
+            markerId = "url(#arrow-in)";
+            opacity = 1;
+          } else if (isOutgoingFromSelected) {
+            strokeColor = "#2563eb"; // Blue for outgoing link
+            strokeWidth = 3;
+            markerId = "url(#arrow-out)";
+            opacity = 1;
+          }
+
+          const dx = p2.x - p1.x;
+          const dy = p2.y - p1.y;
+          const dist = Math.hypot(dx, dy);
+          const ux = dx / dist;
+          const uy = dy / dist;
+
+          if (isBidirectional) {
+            // Offset quadratic Bezier curve so A->B and B->A don't overlap
+            const perpX = -uy * 26;
+            const perpY = ux * 26;
+            const midX = (p1.x + p2.x) / 2 + perpX;
+            const midY = (p1.y + p2.y) / 2 + perpY;
+
+            // Trim start and end to circle boundaries
+            const startAngle = Math.atan2(midY - p1.y, midX - p1.x);
+            const endAngle = Math.atan2(midY - p2.y, midX - p2.x);
+
+            const sx = p1.x + Math.cos(startAngle) * (r1 + 3);
+            const sy = p1.y + Math.sin(startAngle) * (r1 + 3);
+            const ex = p2.x + Math.cos(endAngle) * (r2 + 5);
+            const ey = p2.y + Math.sin(endAngle) * (r2 + 5);
+
+            edgesSvg += `
+              <path
+                d="M ${sx.toFixed(1)} ${sy.toFixed(1)} Q ${midX.toFixed(1)} ${midY.toFixed(1)} ${ex.toFixed(1)} ${ey.toFixed(1)}"
+                fill="none"
+                stroke="${strokeColor}"
+                stroke-width="${strokeWidth}"
+                stroke-opacity="${opacity}"
+                marker-end="${markerId}"
+                class="graph-edge"
+              />
+            `;
+          } else {
+            // Straight directed edge trimmed to node radii
+            const sx = p1.x + ux * (r1 + 3);
+            const sy = p1.y + uy * (r1 + 3);
+            const ex = p2.x - ux * (r2 + 5);
+            const ey = p2.y - uy * (r2 + 5);
+
+            edgesSvg += `
+              <line
+                x1="${sx.toFixed(1)}"
+                y1="${sy.toFixed(1)}"
+                x2="${ex.toFixed(1)}"
+                y2="${ey.toFixed(1)}"
+                stroke="${strokeColor}"
+                stroke-width="${strokeWidth}"
+                stroke-opacity="${opacity}"
+                marker-end="${markerId}"
+                class="graph-edge"
+              />
+            `;
+          }
+        });
+      });
+      edgesGroup.innerHTML = edgesSvg;
+
+      // Build circular page nodes
+      let nodesSvg = "";
+      INDEXED_PAGES.forEach((page) => {
+        const pos = NODE_COORDINATES[page.id];
+        const r = radii[page.id];
+        const isMatched = matchingSet.has(page.id);
+        const isSelected = page.id === selectedNodeId;
+        const isSpam = page.id === 6;
+
+        let fillColor = "#4285F4";
+        if (!isMatched) {
+          fillColor = "#cbd5e1";
+        } else if (isSpam) {
+          fillColor = "#f43f5e";
+        } else if (page.id === 2) {
+          fillColor = "#10b981";
+        }
+
+        const ringStroke = isSelected ? "#0f172a" : "#ffffff";
+        const ringWidth = isSelected ? 3.5 : 2.5;
+        const prPct = (page.pageRank * 100).toFixed(1) + "%";
+
+        nodesSvg += `
+          <g
+            class="graph-node"
+            onclick="selectNode(${page.id})"
+            onmouseenter="selectNode(${page.id})"
+            role="button"
+            tabindex="0"
+            aria-label="Page ${page.id}: ${page.url}, PageRank ${prPct}"
+          >
+            ${
+              isSelected
+                ? `<circle cx="${pos.x}" cy="${pos.y}" r="${r + 7}" fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="4 3" />`
+                : ""
+            }
+            <circle
+              cx="${pos.x}"
+              cy="${pos.y}"
+              r="${r}"
+              fill="${fillColor}"
+              stroke="${ringStroke}"
+              stroke-width="${ringWidth}"
+            />
+            <text
+              x="${pos.x}"
+              y="${pos.y - 3}"
+              text-anchor="middle"
+              fill="${isMatched ? "#ffffff" : "#334155"}"
+              font-size="13"
+              font-weight="800"
+            >
+              #${page.id}
+            </text>
+            <text
+              x="${pos.x}"
+              y="${pos.y + 12}"
+              text-anchor="middle"
+              fill="${isMatched ? "#f8fafc" : "#475569"}"
+              font-size="10.5"
+              font-weight="600"
+            >
+              ${prPct}
+            </text>
+            <!-- Domain Label Pill Below Node -->
+            <text
+              x="${pos.x}"
+              y="${pos.y + r + 16}"
+              text-anchor="middle"
+              fill="#1e293b"
+              font-size="11"
+              font-weight="${isSelected ? "700" : "500"}"
+            >
+              ${page.url}
+            </text>
+          </g>
+        `;
+      });
+      nodesGroup.innerHTML = nodesSvg;
+
+      renderNodeInspector();
+    }
+
+    /**
+     * Renders detailed stats for the currently selected/hovered node in the graph panel.
+     */
+    function renderNodeInspector() {
+      const page = INDEXED_PAGES.find((p) => p.id === selectedNodeId) || INDEXED_PAGES[1];
+      const inspector = document.getElementById("node-inspector");
+
+      const incomingBadges =
+        page.incoming_from.length > 0
+          ? page.incoming_from
+              .map(
+                (id) =>
+                  `<button type="button" onclick="selectNode(${id})" class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-semibold hover:bg-emerald-200 cursor-pointer">#${id}</button>`
+              )
+              .join(" ")
+          : `<span class="text-rose-600 font-semibold">None (0 endorsements)</span>`;
+
+      const outgoingBadges =
+        page.links_to.length > 0
+          ? page.links_to
+              .map(
+                (id) =>
+                  `<button type="button" onclick="selectNode(${id})" class="px-2 py-0.5 rounded bg-blue-100 text-blue-800 font-semibold hover:bg-blue-200 cursor-pointer">#${id}</button>`
+              )
+              .join(" ")
+          : `<span class="text-slate-500">None</span>`;
+
+      inspector.innerHTML = `
+        <div class="space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-400">
+              Selected Node Inspector
+            </span>
+            <span class="text-xs font-mono font-bold px-2.5 py-0.5 rounded-full bg-slate-900 text-white">
+              Page #${page.id}
+            </span>
+          </div>
+
+          <div>
+            <a
+              href="http://${page.url}"
+              onclick="event.preventDefault(); openPagePreview(${page.id});"
+              class="text-base font-bold text-[#1a0dab] hover:underline break-all"
+            >
+              http://${page.url}
+            </a>
+            <p class="text-xs text-slate-600 mt-1 italic">“${escapeHtml(page.text)}”</p>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2.5 pt-1">
+            <div class="bg-slate-50 border border-slate-200 rounded-xl p-2.5">
+              <div class="text-[11px] text-slate-500 font-medium">PageRank Score</div>
+              <div class="text-lg font-extrabold text-slate-900 font-mono">
+                ${page.pageRank.toFixed(3)}
+              </div>
+              <div class="text-[11px] font-semibold text-blue-600">
+                ${(page.pageRank * 100).toFixed(1)}% of total authority
+              </div>
+            </div>
+
+            <div class="bg-slate-50 border border-slate-200 rounded-xl p-2.5">
+              <div class="text-[11px] text-slate-500 font-medium">Incoming Votes</div>
+              <div class="text-lg font-extrabold text-slate-900">
+                ${page.incoming_from.length} ${page.incoming_from.length === 1 ? "link" : "links"}
+              </div>
+              <div class="text-[11px] text-slate-500">
+                Out-degree: ${page.links_to.length}
+              </div>
+            </div>
+          </div>
+
+          <div class="space-y-1.5 text-xs pt-1">
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <span class="text-slate-500 font-medium">Endorsed by (In-links):</span>
+              ${incomingBadges}
+            </div>
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <span class="text-slate-500 font-medium">Votes for (Out-links):</span>
+              ${outgoingBadges}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    /**
+     * ============================================================================
+     * 6. REFERENCE DATA TABLE RENDERER
+     * ============================================================================
+     */
+    function renderReferenceTable(matchingIds) {
+      const tbody = document.getElementById("reference-table-body");
+      const matchingSet = new Set(matchingIds);
+
+      tbody.innerHTML = INDEXED_PAGES.map((page) => {
+        const isSelected = page.id === selectedNodeId;
+        const isMatched = matchingSet.has(page.id);
+        const outStr = page.links_to.map((id) => `#${id}`).join(", ") || "—";
+        const inStr = page.incoming_from.map((id) => `#${id}`).join(", ") || "None (0)";
+
+        return `
+          <tr
+            onclick="selectNode(${page.id})"
+            class="cursor-pointer transition-colors ${
+              isSelected ? "bg-blue-50/70" : "hover:bg-slate-50"
+            }"
+          >
+            <td class="py-3 px-4 font-bold text-slate-800 whitespace-nowrap">
+              <span class="inline-flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full ${
+                  isMatched ? "bg-emerald-500" : "bg-slate-300"
+                }"></span>
+                #${page.id}
+              </span>
+            </td>
+            <td class="py-3 px-4 whitespace-nowrap">
+              <a
+                href="http://${page.url}"
+                onclick="event.preventDefault(); event.stopPropagation(); openPagePreview(${page.id});"
+                class="font-medium text-[#1a0dab] hover:underline"
+              >
+                ${page.url}
+              </a>
+            </td>
+            <td class="py-3 px-4 text-slate-700">
+              ${escapeHtml(page.text)}
+            </td>
+            <td class="py-3 px-4 font-mono text-xs text-slate-700 whitespace-nowrap">
+              ${outStr}
+            </td>
+            <td class="py-3 px-4 font-mono text-xs whitespace-nowrap ${
+              page.incoming_from.length === 0 ? "text-rose-600 font-semibold" : "text-emerald-700 font-semibold"
+            }">
+              ${inStr}
+            </td>
+            <td class="py-3 px-4 text-right font-mono font-bold text-slate-900 whitespace-nowrap">
+              ${page.pageRank.toFixed(3)}
+              <span class="text-xs font-normal text-slate-500">(${(page.pageRank * 100).toFixed(1)}%)</span>
+            </td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    /**
+     * ============================================================================
+     * 7. INTERACTIVE HANDLERS & SIMULATED PAGE MODAL
+     * ============================================================================
+     */
+    function selectNode(pageId) {
+      selectedNodeId = pageId;
+      const terms = parseQueryTerms(currentQuery);
+      const matchingIds =
+        terms.length === 0
+          ? INDEXED_PAGES.map((p) => p.id)
+          : INDEXED_PAGES.filter((p) => countKeywordOccurrences(p.text, terms) > 0).map((p) => p.id);
+
+      renderLinkGraph(matchingIds);
+      renderReferenceTable(matchingIds);
+    }
+
+    function triggerQuickSearch(query) {
+      const input = document.getElementById("search-input");
+      input.value = query;
+      renderSearchResults(query);
+    }
+
+    function openPagePreview(pageId) {
+      const page = INDEXED_PAGES.find((p) => p.id === pageId);
+      if (!page) return;
+
+      const modal = document.getElementById("preview-modal");
+      document.getElementById("modal-url-bar").textContent = `http://${page.url}`;
+
+      const outLinksHtml = page.links_to
+        .map((targetId) => {
+          const targetPage = INDEXED_PAGES.find((p) => p.id === targetId);
+          return `
+            <button
+              type="button"
+              onclick="openPagePreview(${targetId})"
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-semibold border border-blue-200 transition-colors cursor-pointer"
+            >
+              <span>Page #${targetId}: ${targetPage ? targetPage.url : ""}</span>
+              <span>→</span>
+            </button>
+          `;
+        })
+        .join("");
+
+      document.getElementById("modal-body").innerHTML = `
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-400">
+            Simulated Indexed Webpage • Page #${page.id}
+          </span>
+          <span class="text-xs font-mono font-bold bg-blue-50 text-blue-800 border border-blue-200 px-2.5 py-0.5 rounded-full">
+            PageRank: ${page.pageRank.toFixed(3)} (${(page.pageRank * 100).toFixed(1)}%)
+          </span>
+        </div>
+
+        <div class="p-4 rounded-xl bg-slate-50 border border-slate-200">
+          <h3 class="text-lg font-bold text-slate-900 mb-1">${page.url}</h3>
+          <p class="text-base text-slate-800 leading-relaxed">“${escapeHtml(page.text)}”</p>
+        </div>
+
+        <div class="space-y-2">
+          <div class="text-xs font-semibold text-slate-600">
+            Hyperlinks on this page (Outgoing Votes):
+          </div>
+          <div class="flex flex-wrap gap-2">
+            ${outLinksHtml || '<span class="text-xs text-slate-400">No outgoing links</span>'}
+          </div>
+        </div>
+
+        <div class="text-xs text-slate-500 border-t border-slate-100 pt-3">
+          <strong>Incoming endorsements:</strong> ${
+            page.incoming_from.length > 0
+              ? `Linked from Page ${page.incoming_from.map((id) => `#${id}`).join(", ")}`
+              : "None (0 pages link to this URL)"
+          }
+        </div>
+      `;
+
+      modal.classList.remove("hidden");
+      modal.classList.add("flex");
+    }
+
+    function closePagePreview() {
+      const modal = document.getElementById("preview-modal");
+      modal.classList.add("hidden");
+      modal.classList.remove("flex");
+    }
+
+    // Wire up form, chips, clear button, and modal events on DOMContentLoaded
+    document.addEventListener("DOMContentLoaded", () => {
+      const form = document.getElementById("search-form");
+      const input = document.getElementById("search-input");
+      const clearBtn = document.getElementById("clear-btn");
+      const closeModalBtn = document.getElementById("close-modal-btn");
+      const previewModal = document.getElementById("preview-modal");
+
+      form.addEventListener("submit", (e) => {
+        e.preventDefault();
+        renderSearchResults(input.value);
+      });
+
+      // Live search updates as user types
+      input.addEventListener("input", () => {
+        renderSearchResults(input.value);
+      });
+
+      clearBtn.addEventListener("click", () => {
+        input.value = "";
+        input.focus();
+        renderSearchResults("");
+      });
+
+      document.querySelectorAll(".query-chip").forEach((chip) => {
+        chip.addEventListener("click", () => {
+          const query = chip.getAttribute("data-query") ?? "";
+          triggerQuickSearch(query);
+        });
+      });
+
+      closeModalBtn.addEventListener("click", closePagePreview);
+      previewModal.addEventListener("click", (e) => {
+        if (e.target === previewModal) {
+          closePagePreview();
+        }
+      });
+
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") {
+          closePagePreview();
+        }
+      });
+
+      // Initial render pre-filled with "pizza"
+      renderSearchResults("pizza");
+    });
+  </script>
+</body>
+</html>
